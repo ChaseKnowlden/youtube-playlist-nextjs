@@ -1,6 +1,4 @@
 import { useCallback, useEffect, useState } from 'react'
-import Button from '../components/Button'
-import ClickCount from '../components/ClickCount'
 import styles from '../styles/home.module.css'
 
 function throwError() {
@@ -10,62 +8,40 @@ function throwError() {
   )
 }
 
-function Home() {
-  const [count, setCount] = useState(0)
-  const increment = useCallback(() => {
-    setCount((v) => v + 1)
-  }, [setCount])
+const YOUTUBE_PLAYLIST_ITEMS_API = 'https://www.googleapis.com/youtube/v3/playlistItems';
 
-  useEffect(() => {
-    const r = setInterval(() => {
-      increment()
-    }, 1000)
-
-    return () => {
-      clearInterval(r)
+export async function getServerSideProps() {
+  const res = await fetch(`${YOUTUBE_PLAYLIST_ITEMS_API}?part=snippet&maxResults=50&playlistId=PLexbWs0Wp_H6AnPZ1NQ3UvKUSWUzMsNnR&key=${process.env.YOUTUBE_API_KEY}`)
+  const data = await res.json();
+  return {
+    props: {
+      data
     }
-  }, [increment])
+  }
+}
 
+export default function Home({ data }) {
   return (
     <main className={styles.main}>
-      <h1>Fast Refresh Demo</h1>
-      <p>
-        Fast Refresh is a Next.js feature that gives you instantaneous feedback
-        on edits made to your React components, without ever losing component
-        state.
-      </p>
-      <hr className={styles.hr} />
-      <div>
-        <p>
-          Auto incrementing value. The counter won't reset after edits or if
-          there are errors.
-        </p>
-        <p>Current value: {count}</p>
-      </div>
-      <hr className={styles.hr} />
-      <div>
-        <p>Component with state.</p>
-        <ClickCount />
-      </div>
-      <hr className={styles.hr} />
-      <div>
-        <p>
-          The button below will throw 2 errors. You'll see the error overlay to
-          let you know about the errors but it won't break the page or reset
-          your state.
-        </p>
-        <Button
-          onClick={(e) => {
-            setTimeout(() => document.parentNode(), 0)
-            throwError()
-          }}
-        >
-          Throw an Error
-        </Button>
-      </div>
-      <hr className={styles.hr} />
+      <h1 className={styles.title}>
+        My Talks
+      </h1>
+      <ul className={styles.grid}>
+        {data.items.map(({ id, snippet = {} }) => {
+          const { title, thumbnails = {}, resourceId = {} } = snippet;
+          const { medium } = thumbnails;
+          return (
+            <li key={id} className={styles.card}>
+              <a href={`https://www.youtube.com/watch?v=${resourceId.videoId}`}>
+                <p>
+                  <img width={medium.width} height={medium.height} src={medium.url} alt="" />
+                </p>
+                <h3>{ title }</h3>
+              </a>
+            </li>
+          )
+        })}
+      </ul>
     </main>
   )
 }
-
-export default Home
